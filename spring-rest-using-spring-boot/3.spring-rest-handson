@@ -1,0 +1,94 @@
+Activity 1: Create static employee list using XML.
+
+Answer:
+Create employee.xml in src/main/resources. Define departments, skills, and employees:
+xml
+
+<bean id="dept1" class="com.cognizant.springlearn.model.Department">
+    <property name="id" value="1"/>
+    <property name="name" value="IT"/>
+</bean>
+
+<bean id="skill1" class="com.cognizant.springlearn.model.Skill">
+    <property name="id" value="1"/>
+    <property name="name" value="Java"/>
+</bean>
+
+<bean id="emp1" class="com.cognizant.springlearn.model.Employee">
+    <property name="id" value="101"/>
+    <property name="name" value="John Doe"/>
+    <property name="salary" value="5000"/>
+    <property name="permanent" value="true"/>
+    <property name="department" ref="dept1"/>
+    <property name="skillList">
+        <list>
+            <ref bean="skill1"/>
+        </list>
+    </property>
+</bean>
+
+<bean id="employeeList" class="java.util.ArrayList">
+    <constructor-arg>
+        <list>
+            <ref bean="emp1"/>
+            <!-- more employees -->
+        </list>
+    </constructor-arg>
+</bean>
+
+Activity 2: REST service to get all employees.
+
+Answer:
+
+EmployeeDao:
+java
+
+@Repository
+public class EmployeeDao {
+    private static List<Employee> EMPLOYEE_LIST;
+    public EmployeeDao() {
+        ApplicationContext context = new ClassPathXmlApplicationContext("employee.xml");
+        EMPLOYEE_LIST = (List<Employee>) context.getBean("employeeList");
+    }
+    public List<Employee> getAllEmployees() { return EMPLOYEE_LIST; }
+}
+
+EmployeeService:
+java
+
+@Service
+public class EmployeeService {
+    @Autowired private EmployeeDao employeeDao;
+    @Transactional
+    public List<Employee> getAllEmployees() { return employeeDao.getAllEmployees(); }
+}
+
+EmployeeController:
+java
+
+@RestController
+@RequestMapping("/employees")
+public class EmployeeController {
+    @Autowired private EmployeeService employeeService;
+    @GetMapping
+    public List<Employee> getAllEmployees() {
+        return employeeService.getAllEmployees();
+    }
+}
+
+Test: GET http://localhost:8083/employees → returns JSON array of employees.
+Activity 3: REST service for Department.
+
+Answer:
+Create DepartmentDao (reads department list from XML), DepartmentService, and DepartmentController:
+java
+
+@RestController
+@RequestMapping("/departments")
+public class DepartmentController {
+    @Autowired private DepartmentService departmentService;
+    @GetMapping
+    public List<Department> getAllDepartments() {
+        return departmentService.getAllDepartments();
+    }
+}

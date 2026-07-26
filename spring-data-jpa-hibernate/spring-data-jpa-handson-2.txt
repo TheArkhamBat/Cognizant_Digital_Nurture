@@ -1,0 +1,122 @@
+Q7: Demonstrate implementation of Query Methods (Hands-on 1 & 2).
+
+Country Query Methods (Hands-on 1):
+
+@Repository
+public interface CountryRepository extends JpaRepository<Country, String> {
+    // 1. Contains text (case-insensitive)
+    List<Country> findByNameContainingIgnoreCase(String text);
+    
+    // 2. Contains text + Ascending order
+    List<Country> findByNameContainingIgnoreCaseOrderByNameAsc(String text);
+    
+    // 3. Starts with a specific alphabet
+    List<Country> findByNameStartingWithIgnoreCase(String alphabet);
+}
+
+Stock Query Methods (Hands-on 2):
+
+@Entity
+@Table(name = "stock")
+public class Stock {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "st_id")
+    private int id;
+    @Column(name = "st_code")
+    private String code;
+    @Column(name = "st_date")
+    private Date date;
+    @Column(name = "st_open")
+    private double open;
+    @Column(name = "st_close")
+    private double close;
+    @Column(name = "st_volume")
+    private long volume;
+    // getters, setters
+}
+
+StockRepository (Solutions to all 4 queries):
+
+@Repository
+public interface StockRepository extends JpaRepository<Stock, Integer> {
+    // 1. FB stock in Sept 2019
+    List<Stock> findByCodeAndDateBetween(String code, Date from, Date to);
+
+    // 2. Google stock where close > 1250
+    List<Stock> findByCodeAndCloseGreaterThan(String code, double price);
+
+    // 3. Top 3 highest volumes (all codes)
+    List<Stock> findTop3ByOrderByVolumeDesc();
+
+    // 4. Three dates when Netflix stocks were lowest (lowest close)
+    List<Stock> findTop3ByCodeOrderByCloseAsc(String code);
+}
+
+
+Q8: Demonstrate O/R Mapping (Hands-on 3,4,5,6 – Payroll Schema)
+
+@Entity @Table(name = "department")
+public class Department {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "dp_id") private int id;
+    @Column(name = "dp_name") private String name;
+    // getters, setters
+}
+
+@Entity @Table(name = "skill")
+public class Skill {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "sk_id") private int id;
+    @Column(name = "sk_name") private String name;
+    // getters, setters
+}
+
+@Entity @Table(name = "employee")
+public class Employee {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "em_id") private int id;
+    @Column(name = "em_name") private String name;
+    @Column(name = "em_salary") private double salary;
+    @Column(name = "em_permanent") private boolean permanent;
+    @Column(name = "em_date_of_birth") private Date dateOfBirth;
+    // ... getters/setters
+}
+
+
+Hands-on 4 – ManyToOne (Employee ↔ Department):
+
+// In Employee.java
+@ManyToOne
+@JoinColumn(name = "em_dp_id")
+private Department department;
+
+
+Hands-on 5 – OneToMany (Department ↔ Employee):
+
+// In Department.java
+@OneToMany(mappedBy = "department", fetch = FetchType.EAGER) // Change to EAGER to fix LazyInit
+private Set<Employee> employeeList;
+
+Hands-on 6 – ManyToMany (Employee ↔ Skill):
+
+// In Employee.java
+@ManyToMany(fetch = FetchType.EAGER) // Add EAGER to fix LazyInit
+@JoinTable(name = "employee_skill",
+    joinColumns = @JoinColumn(name = "es_em_id"),
+    inverseJoinColumns = @JoinColumn(name = "es_sk_id"))
+private Set<Skill> skillList;
+
+// In Skill.java
+@ManyToMany(mappedBy = "skillList")
+private Set<Employee> employeeList;
+
+
+
+
+
+
+
+
+
+

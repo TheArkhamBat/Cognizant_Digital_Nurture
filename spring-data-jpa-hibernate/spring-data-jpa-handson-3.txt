@@ -1,0 +1,49 @@
+Q9: Writing HQL / JPQL and Native Queries.
+
+Hands-on 2 – GetAllPermanentEmployees (Optimized with fetch):
+
+@Repository
+public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
+    // HQL with fetch to avoid N+1 queries
+    @Query("SELECT e FROM Employee e LEFT JOIN FETCH e.department d LEFT JOIN FETCH e.skillList WHERE e.permanent = true")
+    List<Employee> getAllPermanentEmployees();
+}
+
+Crucial concept: Without fetch, it fires separate queries for departments and skills. The fetch keyword eagerly populates the collections in a single query.
+
+Hands-on 3 – Quiz Attempt Details:
+Entities required: User, Attempt, AttemptQuestion, AttemptOption, Question, Options.
+
+Repository HQL:
+
+@Repository
+public interface AttemptRepository extends JpaRepository<Attempt, Integer> {
+    @Query("SELECT a FROM Attempt a " +
+           "LEFT JOIN FETCH a.user u " +
+           "LEFT JOIN FETCH a.attemptQuestions aq " +
+           "LEFT JOIN FETCH aq.question q " +
+           "LEFT JOIN FETCH aq.attemptOptions ao " +
+           "LEFT JOIN FETCH ao.option o " +
+           "WHERE u.id = :userId AND a.id = :attemptId")
+    Attempt getAttempt(@Param("userId") int userId, @Param("attemptId") int attemptId);
+}
+
+This solves the N+1 problem by fetching the entire object graph in one query.
+
+Hands-on 4 – Average Salary (Aggregate HQL):
+
+@Query("SELECT AVG(e.salary) FROM Employee e WHERE e.department.id = :deptId")
+double getAverageSalary(@Param("deptId") int deptId);
+
+Hands-on 5 – Native Query:
+
+@Query(value = "SELECT * FROM employee", nativeQuery = true)
+List<Employee> getAllEmployeesNative();
+
+Q10: Explain the need and benefit of Criteria Query (Hands-on 6).
+
+Answer: Criteria queries are used for dynamic query building. Unlike HQL (which is static and string-based), criteria allow you to programmatically add WHERE, ORDER BY, and JOIN clauses based on runtime conditions (e.g., user selecting checkboxes on an e-commerce filter sidebar).
+
+    Benefits: Type-safe (using JPA metamodel), avoids string concatenation errors, and is more maintainable for complex, variable search forms.
+
+    Example: CriteriaBuilder cb = entityManager.getCriteriaBuilder(); CriteriaQuery<Employee> cq = cb.createQuery(Employee.class); Root<Employee> root = cq.from(Employee.class); and then adding cb.equal(...) or cb.like(...) predicates dynamically.

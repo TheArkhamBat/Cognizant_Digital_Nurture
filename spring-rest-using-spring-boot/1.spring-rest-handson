@@ -1,0 +1,135 @@
+Q1: Explain the need and benefits of Spring Boot.
+
+Answer: Spring Boot drastically simplifies Java enterprise development by:
+
+    Auto‑configuration – opinionated defaults based on classpath dependencies.
+
+    Embedded server – Tomcat/Jetty are embedded, no WAR deployment needed.
+
+    Starter POMs – grouped dependencies (e.g., spring-boot-starter-web).
+
+    Zero XML – configuration via application.properties or application.yml.
+
+    Production‑ready – Actuator, health checks, metrics.
+
+    Reduced development time – eliminates boilerplate and tedious setup.
+
+Q2: Demonstrate loading a bean from Spring XML configuration.
+
+Answer:
+Create an XML file (e.g., date-format.xml) in src/main/resources:
+xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="dateFormat" class="java.text.SimpleDateFormat">
+        <constructor-arg value="dd/MM/yyyy" />
+    </bean>
+</beans>
+
+Load and use it in Java:
+java
+
+ApplicationContext context = new ClassPathXmlApplicationContext("date-format.xml");
+SimpleDateFormat format = context.getBean("dateFormat", SimpleDateFormat.class);
+Date d = format.parse("31/12/2018");
+LOGGER.debug(d.toString());
+
+    <constructor-arg> → constructor injection.
+
+    <property> → setter injection.
+
+    ClassPathXmlApplicationContext loads XML from classpath.
+
+    getBean() retrieves the bean instance.
+
+Q3: What happens when context.getBean() is invoked?
+
+Answer:
+
+    Spring looks up the bean definition by id or by type.
+
+    If the scope is singleton (default), it returns the cached instance – constructor called once.
+
+    If the scope is prototype, it creates a new instance – constructor called every time.
+
+    Dependencies (constructor args or properties) are injected before returning the bean.
+
+Q4: Explain Singleton vs Prototype scope.
+
+Answer:
+
+    Singleton – one instance per Spring container. Default scope. Constructor invoked once.
+
+    Prototype – a new instance every time getBean() is called. Constructor invoked each time.
+
+    Defined using scope="prototype" in the <bean> tag.
+
+Q5: Incorporate logging in Spring Boot.
+
+Answer:
+Add to application.properties:
+properties
+
+logging.level.org.springframework=info
+logging.level.com.cognizant.springlearn=debug
+logging.pattern.console=%d{yyMMdd}|%d{HH:mm:ss.SSS}|%-20.20thread|%5p|%-25.25logger{25}|%25M|%m%n
+
+In Java class:
+java
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+private static final Logger LOGGER = LoggerFactory.getLogger(YourClass.class);
+
+Use LOGGER.info(), LOGGER.debug(), etc. Never use System.out.println().
+Q6: Load a Country bean from XML (Hands‑on 4).
+
+Answer:
+Country.java (POJO with code, name, empty constructor with debug log, getters/setters with debug log, toString()).
+
+country.xml:
+xml
+
+<bean id="country" class="com.cognizant.springlearn.Country">
+    <property name="code" value="IN" />
+    <property name="name" value="India" />
+</bean>
+
+displayCountry():
+java
+
+ApplicationContext context = new ClassPathXmlApplicationContext("country.xml");
+Country country = context.getBean("country", Country.class);
+LOGGER.debug("Country : {}", country);
+
+Q7: Load a list of Countries from XML (Hands‑on 6).
+
+Answer:
+Define each country as a bean, then aggregate them:
+xml
+
+<bean id="in" class="com.cognizant.springlearn.Country">
+    <property name="code" value="IN"/>
+    <property name="name" value="India"/>
+</bean>
+<!-- similarly for us, de, jp -->
+
+<bean id="countryList" class="java.util.ArrayList">
+    <constructor-arg>
+        <list>
+            <ref bean="in"/>
+            <ref bean="us"/>
+            <ref bean="de"/>
+            <ref bean="jp"/>
+        </list>
+    </constructor-arg>
+</bean>
+
+    <list> defines a collection.
+
+    <ref bean="..."> references another bean.

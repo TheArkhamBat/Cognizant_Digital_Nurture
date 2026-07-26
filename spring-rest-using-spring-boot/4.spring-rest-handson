@@ -1,0 +1,154 @@
+Q1: Significance of HTTP Method Types.
+
+Answer:
+Method	Usage
+GET	Retrieve a resource
+POST	Create a new resource
+PUT	Update an existing resource (full update)
+DELETE	Delete a resource
+
+These map directly to CRUD operations and are part of the HTTP specification.
+Q2: RESTful resource naming guidelines.
+
+Answer:
+
+    Use plural nouns for resource names: /countries, /employees.
+
+    Use hyphens for multi‑word resources: /menu-items.
+
+    Append identifier for specific resource: /countries/{id}.
+
+    Keep the URL consistent across methods for the same resource.
+
+Method	URL	Description
+GET	/countries	Get all
+GET	/countries/{code}	Get one
+POST	/countries	Create
+PUT	/countries	Update
+DELETE	/countries/{code}	Delete
+Q3: Implement POST with validation.
+
+Country bean with validation annotations:
+java
+
+public class Country {
+    @NotNull
+    @Size(min=2, max=2, message="Country code should be 2 characters")
+    private String code;
+
+    @NotNull
+    @Size(min=1, max=50)
+    private String name;
+    // getters/setters
+}
+
+Controller method:
+java
+
+@PostMapping
+public Country addCountry(@RequestBody @Valid Country country) {
+    LOGGER.info("Start");
+    // persistence logic
+    return country;
+}
+
+Global Exception Handler:
+java
+
+@ControllerAdvice
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex, HttpHeaders headers,
+            HttpStatus status, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", new Date());
+        body.put("status", status.value());
+        List<String> errors = ex.getBindingResult().getFieldErrors()
+            .stream().map(x -> x.getDefaultMessage())
+            .collect(Collectors.toList());
+        body.put("errors", errors);
+        return new ResponseEntity<>(body, headers, status);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex, HttpHeaders headers,
+            HttpStatus status, WebRequest request) {
+        // handles incorrect format (e.g., string in numeric field)
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", new Date());
+        body.put("status", status.value());
+        body.put("error", "Bad Request");
+        if (ex.getCause() instanceof InvalidFormatException) {
+            InvalidFormatException ife = (InvalidFormatException) ex.getCause();
+            for (InvalidFormatException.Reference ref : ife.getPath()) {
+                body.put("message", "Incorrect format for field '" + ref.getFieldName() + "'");
+            }
+        }
+        return new ResponseEntity<>(body, headers, status);
+    }
+}
+
+Q4: Implement PUT to update Employee.
+
+Validation on Employee (fields):
+
+    id → @NotNull
+
+    name → @NotBlank, @Size(max=30)
+
+    salary → @NotNull, @Min(0)
+
+    permanent → @NotNull
+
+    dateOfBirth → @JsonFormat(pattern="dd/MM/yyyy")
+
+EmployeeNotFoundException:
+java
+
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public class EmployeeNotFoundException extends Exception { }
+
+DAO update method:
+java
+
+public void updateEmployee(Employee employee) throws EmployeeNotFoundException {
+    for (int i = 0; i < EMPLOYEE_LIST.size(); i++) {
+        if (EMPLOYEE_LIST.get(i).getId() == employee.getId()) {
+            EMPLOYEE_LIST.set(i, employee);
+            return;
+        }
+    }
+    throw new EmployeeNotFoundException();
+}
+
+Controller:
+java
+
+@PutMapping
+public void updateEmployee(@RequestBody @Valid Employee employee) throws EmployeeNotFoundException {
+    employeeService.updateEmployee(employee);
+}
+
+Q5: Implement DELETE.
+
+DAO delete method:
+java
+
+public void deleteEmployee(int id) throws EmployeeNotFoundException {
+    boolean removed = EMPLOYEE_LIST.removeIf(e -> e.getId() == id);
+    if (!removed) throw new EmployeeNotFoundException();
+}
+
+Controller:
+java
+
+@DeleteMapping("/{id}")
+public void deleteEmployee(@PathVariable int id) throws EmployeeNotFoundException {
+    employeeService.deleteEmployee(id);
+}
+
+Testing: Use Postman – DELETE http://localhost:8083/employees/101.
+

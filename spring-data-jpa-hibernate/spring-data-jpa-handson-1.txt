@@ -1,0 +1,104 @@
+Q1: Explain the need and benefit of ORM.
+
+Answer: ORM bridges the impedance mismatch between OOP and relational databases.
+
+    Benefits: Abstracts database vendor specifics, reduces boilerplate JDBC code, provides transaction management, enables object-centric querying (HQL/JPQL), and offers features like caching, lazy loading, and automatic dirty-checking.
+
+    Cons: Can introduce performance overhead if queries are not optimized, adds a learning curve, and complex joins may require native SQL.
+
+Q2: Demonstrate the need and benefit of Spring Data JPA.
+
+Answer:
+
+    Evolution: Hibernate XML → Hibernate Annotations → Spring Data JPA.
+
+    Benefit of Spring Data JPA: It eliminates the boilerplate DAO implementation. By simply extending JpaRepository, you get CRUD, pagination, and sorting methods. It auto-implements query methods based on naming conventions and provides seamless transaction management with @Transactional.
+
+Q3: Explain the core objects of the Hibernate framework.
+
+Answer:
+
+    SessionFactory: Thread-safe, heavyweight object created once per application. It holds configuration and metadata.
+
+    Session: Lightweight, thread-unsafe object representing a single unit of work. Used to perform CRUD operations.
+
+    Transaction: Represents a database transaction (ACID). Used with beginTransaction() and commit()/rollback().
+
+    ConnectionProvider: Abstracts the underlying JDBC connection pool.
+
+Q4: Explain ORM implementation with Hibernate XML vs Annotation Configuration.
+
+Answer:
+
+    XML: Uses .hbm.xml files for mapping fields to columns; hibernate.cfg.xml for DB config. Loading uses new Configuration().configure().buildSessionFactory().
+
+    Annotation: Uses @Entity, @Table, @Id, @Column directly in POJOs. hibernate.cfg.xml still exists but is shorter (just DB details, mapping class references).
+
+Q5: Explain the difference between JPA, Hibernate, and Spring Data JPA.
+
+Answer:
+
+    JPA (Jakarta Persistence API): A specification (JSR 338) defining a set of interfaces. No implementation.
+
+    Hibernate: A concrete ORM framework that implements the JPA specification.
+
+    Spring Data JPA: An abstraction layer that uses Hibernate (or other JPA providers) under the hood. It provides repositories and automatically generates implementations, eliminating boilerplate.
+
+Q6: Demonstrate DML using Spring Data JPA (Hands-on 1 & 5–9)
+
+Key Code Solutions:
+
+
+
+@Entity
+@Table(name="country")
+public class Country {
+    @Id
+    @Column(name="co_code")
+    private String code;
+    @Column(name="co_name")
+    private String name;
+    // getters, setters, toString
+}
+
+CountryRepository:
+java
+
+@Repository
+public interface CountryRepository extends JpaRepository<Country, String> {}
+
+CountryService (CRUD methods):
+
+
+@Service
+public class CountryService {
+    @Autowired
+    private CountryRepository countryRepository;
+
+    @Transactional
+    public List<Country> getAllCountries() { return countryRepository.findAll(); }
+
+    @Transactional
+    public Country findCountryByCode(String code) throws CountryNotFoundException {
+        return countryRepository.findById(code)
+            .orElseThrow(() -> new CountryNotFoundException("Country not found"));
+    }
+
+    @Transactional
+    public void addCountry(Country country) { countryRepository.save(country); }
+
+    @Transactional
+    public void updateCountry(String code, String name) throws CountryNotFoundException {
+        Country c = findCountryByCode(code);
+        c.setName(name);
+        countryRepository.save(c);
+    }
+
+    @Transactional
+    public void deleteCountry(String code) { countryRepository.deleteById(code); }
+}
+
+Testing in OrmLearnApplication:
+java
+
+private static void testGetAllCountries() { ... } // Uses countryService.getAllCountries()

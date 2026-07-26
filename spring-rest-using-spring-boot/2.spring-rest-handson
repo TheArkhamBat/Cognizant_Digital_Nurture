@@ -1,0 +1,128 @@
+Q1: Explain HTTP Request and Response in detail.
+
+Answer:
+
+    HTTP Request:
+
+        Request Line: METHOD /resource HTTP/version (e.g., GET /hello HTTP/1.1)
+
+        Headers: Host, User-Agent, Content-Type, Accept-Language, etc.
+
+        Body (optional): JSON, form data, file uploads.
+
+    HTTP Response:
+
+        Status Line: HTTP/version status-code reason (e.g., HTTP/1.1 200 OK)
+
+        Headers: Date, Server, Content-Type, Content-Length.
+
+        Body: the actual resource (HTML, JSON, image bytes).
+
+    In Chrome DevTools → Network tab, you can inspect all headers for any request.
+
+Q2: Explain the need and benefits of RESTful Web Services.
+
+Answer:
+
+    REST = REpresentational State Transfer – an architectural style for distributed systems.
+
+    Benefits:
+
+        Stateless – each request contains all needed info → scalability.
+
+        Cacheable – reduces server load.
+
+        Uniform interface – uses standard HTTP methods (GET, POST, PUT, DELETE).
+
+        Client‑server separation – frontend and backend evolve independently.
+
+        Lightweight – JSON/XML, much smaller than SOAP.
+
+        Technology‑agnostic – any client (browser, mobile, IoT) can consume it.
+
+Q3: Demonstrate GET RESTful Web Service.
+
+HelloController:
+java
+
+@RestController
+public class HelloController {
+    @GetMapping("/hello")
+    public String sayHello() {
+        LOGGER.info("Start");
+        return "Hello World!!";
+    }
+}
+
+URL: http://localhost:8083/hello → returns Hello World!!
+
+CountryController – GET single country:
+java
+
+@RestController
+public class CountryController {
+    @GetMapping("/country")
+    public Country getCountryIndia() {
+        ApplicationContext context = new ClassPathXmlApplicationContext("country.xml");
+        return context.getBean("country", Country.class);
+    }
+}
+
+Response: {"code":"IN", "name":"India"} – Jackson converts bean to JSON automatically.
+
+GET all countries:
+java
+
+@GetMapping("/countries")
+public List<Country> getAllCountries() {
+    ApplicationContext context = new ClassPathXmlApplicationContext("country.xml");
+    return (List<Country>) context.getBean("countryList");
+}
+
+GET country by code:
+java
+
+@GetMapping("/countries/{code}")
+public Country getCountry(@PathVariable String code) throws CountryNotFoundException {
+    // iterate over list, case-insensitive match
+    // if not found, throw CountryNotFoundException
+}
+
+Q4: Explain Exception Handling with @ResponseStatus.
+
+Answer:
+java
+
+@ResponseStatus(value = HttpStatus.NOT_FOUND, reason = "Country not found")
+public class CountryNotFoundException extends Exception {
+}
+
+When this exception is thrown from a controller, Spring automatically returns HTTP 404 with the given reason.
+Q5: Demonstrate MockMVC end‑to‑end testing.
+java
+
+@SpringBootTest
+@AutoConfigureMockMvc
+public class SpringLearnApplicationTests {
+
+    @Autowired
+    private MockMvc mvc;
+
+    @Test
+    public void testGetCountry() throws Exception {
+        ResultActions actions = mvc.perform(get("/country"));
+        actions.andExpect(status().isOk());
+        actions.andExpect(jsonPath("$.code").exists());
+        actions.andExpect(jsonPath("$.code").value("IN"));
+        actions.andExpect(jsonPath("$.name").value("India"));
+    }
+
+    @Test
+    public void testGetCountryException() throws Exception {
+        ResultActions actions = mvc.perform(get("/countries/az"));
+        actions.andExpect(status().isBadRequest());
+        actions.andExpect(status().reason("Country Not found"));
+    }
+}
+
+Run with mvn test.
